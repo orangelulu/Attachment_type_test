@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>依恋类型专业测评</title>
+    <style>
+        :root { --primary: #6c5ce7; --bg: #f9f9fb; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 500px; }
+        h2 { color: var(--primary); text-align: center; }
+        .hidden { display: none; }
+        input[type="text"] { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { opacity: 0.9; }
+        .question { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .options label { display: block; margin: 10px 0; cursor: pointer; padding: 8px; border-radius: 5px; }
+        .options label:hover { background: #f0f0ff; }
+        .result-card { text-align: center; line-height: 1.6; }
+        .type-name { font-size: 24px; font-weight: bold; color: var(--primary); margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="auth-section">
+        <h2>身份验证</h2>
+        <p style="font-size: 14px; color: #666;">请输入您购买的独家访问 Key 以开始测试：</p>
+        <input type="text" id="access-key" placeholder="请输入 Key">
+        <button onclick="checkKey()">验证并开始</button>
+        <p id="error-msg" style="color: red; font-size: 12px; margin-top: 10px;"></p>
+    </div>
+
+    <div id="quiz-section" class="hidden">
+        <h2>依恋类型测评</h2>
+        <div id="questions"></div>
+        <button onclick="calculateResult()">提交查看报告</button>
+    </div>
+
+    <div id="result-section" class="hidden">
+        <h2>您的测评结果</h2>
+        <div class="result-card">
+            <div id="result-type" class="type-name"></div>
+            <p id="result-desc"></p>
+            <button onclick="location.reload()" style="margin-top: 20px; background: #999;">重新测试</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 【商家设置区】在此修改你的 Key，你可以设置多个
+    const VALID_KEYS = ["GIFT888", "LOVE2026", "VIP999"]; 
+
+    const questions = [
+        { q: "1. 我经常担心恋人并不真的爱我。", type: "anxiety" },
+        { q: "2. 当有人和我太亲近时，我会感到不自在。", type: "avoidance" },
+        { q: "3. 我发现我很难完全信任他人。", type: "avoidance" },
+        { q: "4. 我非常担心会被人抛弃。", type: "anxiety" },
+        { q: "5. 我倾向于不向他人倾诉我内心的感受。", type: "avoidance" },
+        { q: "6. 我很在意别人对我的看法，容易感到焦虑。", type: "anxiety" },
+        { q: "7. 我发现自己很难去依赖别人。", type: "avoidance" },
+        { q: "8. 我常常希望恋人能和我保持绝对的亲密。", type: "anxiety" }
+    ];
+
+    function checkKey() {
+        const input = document.getElementById('access-key').value;
+        if (VALID_KEYS.includes(input)) {
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('quiz-section').classList.remove('hidden');
+            loadQuestions();
+        } else {
+            document.getElementById('error-msg').innerText = "无效的 Key，请联系卖家购买。";
+        }
+    }
+
+    function loadQuestions() {
+        const container = document.getElementById('questions');
+        questions.forEach((item, index) => {
+            container.innerHTML += `
+                <div class="question">
+                    <p>${item.q}</p>
+                    <div class="options">
+                        <label><input type="radio" name="q${index}" value="1"> 极不符合</label>
+                        <label><input type="radio" name="q${index}" value="3"> 一般</label>
+                        <label><input type="radio" name="q${index}" value="5"> 非常符合</label>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function calculateResult() {
+        let anxScore = 0, avoScore = 0;
+        let answered = 0;
+
+        questions.forEach((item, index) => {
+            const val = document.querySelector(`input[name="q${index}"]:checked`);
+            if (val) {
+                const score = parseInt(val.value);
+                if (item.type === 'anxiety') anxScore += score;
+                else avoScore += score;
+                answered++;
+            }
+        });
+
+        if (answered < questions.length) return alert("请完成所有题目哦！");
+
+        let type = "", desc = "";
+        if (anxScore <= 12 && avoScore <= 12) {
+            type = "安全型 (Secure)";
+            desc = "你在关系中感到舒适，既不担心被抛弃，也不害怕亲密。你能够坦诚地表达需求。";
+        } else if (anxScore > 12 && avoScore <= 12) {
+            type = "焦虑型 (Anxious)";
+            desc = "你渴望极度亲密，常担心伴侣离开。你对关系中的细微变化非常敏感。";
+        } else if (anxScore <= 12 && avoScore > 12) {
+            type = "回避型 (Avoidant)";
+            desc = "你更看重独立性，当关系过于亲密时会感到压抑。你习惯通过保持距离来保护自己。";
+        } else {
+            type = "恐惧型 (Fearful-Avoidant)";
+            desc = "你既渴望亲密又害怕受伤。你在关系中常处于矛盾状态，想要靠近却又想推开。";
+        }
+
+        document.getElementById('quiz-section').classList.add('hidden');
+        document.getElementById('result-section').classList.remove('hidden');
+        document.getElementById('result-type').innerText = type;
+        document.getElementById('result-desc').innerText = desc;
+    }
+</script>
+</body>
+</html>
